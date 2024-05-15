@@ -9,7 +9,7 @@ dependencies:
   - pandas
   - python-dotenv
   - notebook
-  - hdbscan
+  #- hdbscan
   - matplotlib
   - scikit-learn
   - numpy
