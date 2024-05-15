@@ -1,0 +1,19 @@
+**/.vscode
+# MacOS
+.DS_Store
+# Notebook
+.ipynb_checkpoints/
+**/__pycache__/
+*.egg-info/
+*~*
+tiktok_videos_based_on_hashtags_raw_fetch.csv
+**/.env
+logging_config/
+sandbox*
+urls.txt
+meta_OLD.csv
+papermill_output*.ipynb
+executions.log
+.env
+test*
+transcriptions.csv
