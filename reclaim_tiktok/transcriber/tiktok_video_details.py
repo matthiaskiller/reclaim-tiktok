@@ -88,6 +88,11 @@ class TiktokVideoDetails:
             break
 
     @property
+    def video_id(self) -> int:
+        """The id of the video"""
+        return int(self.details.get("id"))
+
+    @property
     def description(self) -> str:
         """The description of the video"""
         return self.details.get("desc")
