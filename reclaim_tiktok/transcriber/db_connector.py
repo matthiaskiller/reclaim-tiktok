@@ -2,6 +2,13 @@ import os
 
 import pyodbc
 from dotenv import load_dotenv
+from main_transcriber import StatCollector, print_progress_bar
+from tiktok_video_details import (
+    HTTPRequestError,
+    RequestReturnedNoneError,
+    TiktokVideoDetails,
+    VideoIsPrivateError,
+)
 
 load_dotenv()
 
@@ -88,3 +95,76 @@ class DBConnector:
             cursor.execute(
                 query, transcript_en, transcript_de, has_transcript, no_transcript_reason, video_id
             )
+
+    def update_transcript_multiple(self, rows: list[pyodbc.Row]) -> None:
+        """
+        Update the transcripts of multiple videos in the database
+
+        Args:
+            rows (list[pyodbc.Row]): List of rows to be updated
+        """
+        with pyodbc.connect(self.connection_str) as cnxn:
+            cursor = cnxn.cursor()
+            query = f"""
+            UPDATE {self.table}
+            SET transcript_en = ?, transcript_de = ?, has_transcript = ?, no_transcript_reason = ?
+            WHERE id = ?
+            """
+
+            total_rows = len(rows)
+            stats = StatCollector()
+
+            def update_with_failure(failure_reason: str, video_id: int):
+                cursor.execute(query, None, None, False, failure_reason, video_id)
+
+            try:
+                index = 0
+                for row in rows:
+                    completion_percentage = (index / total_rows) * 100
+                    print_progress_bar(completion_percentage)
+                    video_id = row[0]
+                    url = row[12]
+                    index += 1
+                    try:
+                        tt_obj = TiktokVideoDetails(url=url)
+                    except VideoIsPrivateError as error:
+                        stats.add_private_video(url)
+                        print("\n", error)
+                        update_with_failure(str(error), video_id)
+                        continue
+                    except (RequestReturnedNoneError, HTTPRequestError) as error:
+                        stats.add_failed_request(url)
+                        print("\n", error)
+                        update_with_failure(str(error), video_id)
+                        continue
+                    except Exception as error:
+                        stats.add_failed_request(url)
+                        print("\nUnexpected Exception occured:", error)
+                        update_with_failure(str(error), video_id)
+                        continue
+
+                    try:
+                        transcriptions = tt_obj.get_transcriptions(disable_azure=True)
+                        if transcriptions:
+                            cursor.execute(
+                                query,
+                                transcriptions.get("eng-US", None),
+                                transcriptions.get("deu-DE", None),
+                                True,
+                                None,
+                                video_id,
+                            )
+                            stats.add_success()
+                        else:
+                            update_with_failure("No transcription provided by Tiktok", video_id)
+
+                    except Exception as error:
+                        print("\n", error)
+                        update_with_failure(str(error), video_id)
+
+            except KeyboardInterrupt:
+                print("\nKeyboard Interrupt detected. Stopping...")
+            except Exception as error:
+                print("\nUnexpected Exception occurred when handling exception:", error)
+            finally:
+                stats.print_stats()
