@@ -53,6 +53,27 @@ class Scrapper:
 
         return videos
 
+    async def get_user_info_by_username(self, count=10, user_name=None):
+        """
+        Search for a user by username
+        Args:
+            count: number of videos to search for per hashtag
+            user_name: username to search for
+        Returns:
+            user_info (TikTokApi user info)
+        """
+        if not user_name:
+            raise ValueError("No user_name provided")
+
+        async with TikTokApi() as api:
+            await api.create_sessions(
+                ms_tokens=[self.ms_token], num_sessions=1, sleep_after=3, headless=False
+            )
+            print(f"Searching for {user_name}")
+            user = api.user(user_name)
+            info = await user.info()
+            return info
+
     async def search_videos_by_users(self, count=10, users=[], videos=[]):
         """
         Search for videos by users
