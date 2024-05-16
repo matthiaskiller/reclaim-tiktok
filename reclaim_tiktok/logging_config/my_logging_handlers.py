@@ -75,12 +75,20 @@ class NonErrorFilter(logging.Filter):
         return record.levelno <= logging.INFO
 
 
-def setup_logging(config_file: str | None = None):
-    if config_file is None:
+def setup_logging(config_json_file: str | None = None):
+    """Sets up the logging configuration for the root logger
+    including specified handlers based off of a config file
+
+    Params
+    ---
+    :param config_json_file: (optional) a custom logging json file
+        if none is provided it loads the default one in the same dir
+    """
+    if config_json_file is None:
         current_file_path = inspect.getfile(inspect.currentframe())
         current_dir_path = os.path.dirname(os.path.abspath(current_file_path))
-        config_file = os.path.join(current_dir_path, "logging_config.json")
-    with open(config_file) as f:
+        config_json_file = os.path.join(current_dir_path, "logging_config.json")
+    with open(config_json_file) as f:
         config = json.load(f)
 
     # Make log directory in cwd if doesn't exist
