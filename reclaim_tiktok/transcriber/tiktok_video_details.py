@@ -1,13 +1,16 @@
 import io
+import json
 import logging
 import os
 import re
 
+import browser_cookie3
 import numpy as np
 import pandas as pd
 import pyktok as pyk
 import requests
 import webvtt
+from bs4 import BeautifulSoup
 from moviepy.editor import VideoFileClip
 from requests.exceptions import ReadTimeout, SSLError
 
@@ -16,6 +19,18 @@ from reclaim_tiktok.transcriber.azure_connector import AzureConnector
 pyk.specify_browser("chrome")
 
 LOG = logging.getLogger("reclaim_tiktok")
+
+BROWSER_NAME = "chrome"
+
+headers = {
+    "Accept-Encoding": "gzip, deflate, sdch",
+    "Accept-Language": "en-US,en;q=0.8",
+    "Upgrade-Insecure-Requests": "1",
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Cache-Control": "max-age=0",
+    "Connection": "keep-alive",
+}
 
 
 class VideoIsPrivateError(Exception):
@@ -54,12 +69,14 @@ class TiktokVideoDetails:
         """
         self.transcription_source: str
         self.transcriptions: dict = None
+        self.cookies = None
         self.url = url
         retries = 3
         while retries > 0:
             try:
-                tt_json = pyk.alt_get_tiktok_json(self.url)
-            except (ReadTimeout, SSLError):
+                # tt_json = pyk.alt_get_tiktok_json(self.url)
+                tt_json = self._get_tiktok_json(self.url)
+            except (ReadTimeout, SSLError, HTTPRequestError):
                 retries -= 1
                 LOG.debug(
                     "HTTPRequestError encountered",
@@ -107,6 +124,20 @@ class TiktokVideoDetails:
                 continue
             break
 
+    def _get_tiktok_json(self, video_url) -> dict | None:
+        if self.cookies is None:
+            self.cookies = getattr(browser_cookie3, BROWSER_NAME)(domain_name="www.tiktok.com")
+        tt = requests.get(video_url, headers=headers, cookies=self.cookies, timeout=20)
+        if tt.status_code != 200:
+            raise HTTPRequestError
+        soup = BeautifulSoup(tt.text, "html.parser")
+        tt_script = soup.find("script", attrs={"id": "__UNIVERSAL_DATA_FOR_REHYDRATION__"})
+        if tt_script is None:
+            return
+        tt_json = json.loads(tt_script.string)
+        self.cookies = tt.cookies
+        return tt_json
+
     @property
     def video_id(self) -> int:
         """The id of the video"""
@@ -144,6 +175,12 @@ class TiktokVideoDetails:
     def duration(self) -> int:
         """Duration of the tiktok in seconds. Defaults to 20."""
         return int(self.details["video"].get("duration", 20))
+
+    @property
+    def as_mp4_file_name(self) -> str:
+        video_prefix = re.findall(pyk.url_regex, self.url)[0]
+        video_filename = video_prefix.replace("/", "_") + ".mp4"
+        return video_filename
 
     def get_transcriptions(self, disable_azure: bool = False) -> dict:
         """Gets english and/or german transcriptions of the video.

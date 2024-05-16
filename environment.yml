@@ -15,16 +15,17 @@ dependencies:
   - numpy
   - pyodbc
   - pip:
-    - black[jupyter]
-    - newsapi-python
-    - langchain-openai
-    - scikit-learn
-    - TikTokApi
-    - browser_cookie3
-    - pyktok
-    - webvtt-py
-    - papermill
-    - moviepy
-    - azure-cognitiveservices-speech
-    - beautifulsoup4
-    - azure-identity
+      - black[jupyter]
+      - newsapi-python
+      - langchain-openai
+      - scikit-learn
+      - TikTokApi
+      - browser_cookie3
+      - pyktok
+      - webvtt-py
+      - papermill
+      - moviepy
+      - azure-cognitiveservices-speech
+      - beautifulsoup4
+      - azure-identity
+      - azure-storage-blob

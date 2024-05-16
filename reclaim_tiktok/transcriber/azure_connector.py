@@ -3,7 +3,9 @@ import os
 import time
 
 import azure.cognitiveservices.speech as speechsdk
+import browser_cookie3
 import requests
+from azure.storage.blob import BlobServiceClient
 from dotenv import load_dotenv
 
 from reclaim_tiktok.video_indexer.consts import Consts
@@ -19,6 +21,7 @@ SPEECH_ENDPOINT = os.environ["AZURE_SPEECH_ENDPOINT"]
 RESOURCE_GROUP = os.environ["RESOURCE_GROUP"]
 ACCOUNT_ID = os.environ["RECLAIM_TIKTOK_ACCOUNT_ID"]
 VIDEO_ACCESS_TOKEN = os.environ["AZURE_VIDEO_ACCESS_TOKEN"]
+STORAGE_CONNECTION_STR = os.environ["AZURE_STORAGE_CONNECTION_STR"]
 
 
 class AzureConnector:
@@ -214,3 +217,27 @@ class AzureConnector:
         print(index)
 
         return {}
+
+    def upload_file_to_storage(url: str, blob_name: str, cookies=None) -> None:
+        if cookies is None:
+            cookies = getattr(browser_cookie3, "chrome")(domain_name="www.tiktok.com")
+        headers = {
+            "Accept-Encoding": "gzip, deflate, sdch",
+            "Accept-Language": "en-US,en;q=0.8",
+            "Upgrade-Insecure-Requests": "1",
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Cache-Control": "max-age=0",
+            "Connection": "keep-alive",
+            "referer": "https://www.tiktok.com/",
+        }
+        result = requests.get(url, headers=headers, cookies=cookies)
+        if result.status_code != 200:
+            print("Request Unsuccessful:")
+            print(result.reason)
+            print(result.content)
+        file_content = result.content
+
+        blob_service_client = BlobServiceClient.from_connection_string(STORAGE_CONNECTION_STR)
+        blob_client = blob_service_client.get_blob_client("tiktoks-for-vi", blob_name)
+        blob_client.upload_blob(file_content)
