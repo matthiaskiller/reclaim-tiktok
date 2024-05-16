@@ -3,6 +3,7 @@ import inspect
 import json
 import logging
 import os
+from typing import Any
 
 LOG_RECORD_BUILTIN_ATTRS = {
     "args",
@@ -32,15 +33,25 @@ LOG_RECORD_BUILTIN_ATTRS = {
 
 
 class MyJSONFormatter(logging.Formatter):
+    """A custom logging formatter that outputs logs in json format"""
+
     def __init__(self, *, fmt_keys: dict[str, str] | None = None):
         super().__init__()
         self.fmt_keys = fmt_keys if fmt_keys is not None else {}
 
     def format(self, record: logging.LogRecord) -> str:
+        """Overrides default format attribute"""
         message = self._prepare_log_dict(record)
         return json.dumps(message, default=str)
 
-    def _prepare_log_dict(self, record: logging.LogRecord):
+    def _prepare_log_dict(self, record: logging.LogRecord) -> dict[str, str | Any]:
+        """Creates the json formatted message
+
+        Params
+        ---
+        :param record: A logging record
+        :returns message: a dict representing the log data
+        """
         always_fields = {
             "message": record.getMessage(),
             "timestamp": datetime.datetime.fromtimestamp(
