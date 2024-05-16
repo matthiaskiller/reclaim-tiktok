@@ -53,26 +53,36 @@ class Scrapper:
 
         return videos
 
-    async def get_user_info_by_username(self, count=10, user_name=None):
+    async def get_user_info_by_username(self, count=10, user_names=[]):
         """
         Search for a user by username
         Args:
             count: number of videos to search for per hashtag
-            user_name: username to search for
+            user_names: list of usernames to search for
         Returns:
-            user_info (TikTokApi user info)
+            user_info: list of user_infos (TikTokApi user info)
         """
-        if not user_name:
+        if not user_names:
             raise ValueError("No user_name provided")
 
+        user_infos = []
         async with TikTokApi() as api:
             await api.create_sessions(
                 ms_tokens=[self.ms_token], num_sessions=1, sleep_after=3, headless=False
             )
-            print(f"Searching for {user_name}")
-            user = api.user(user_name)
-            info = await user.info()
-            return info
+
+            for user_name in user_names:
+                print(f"Searching for {user_name}")
+                try:
+                    user = api.user(user_name)
+                    user_info = await user.info()
+                    user_infos.append(user_info)
+                except KeyError as e:
+                    print(e)
+                    user_info = None
+                    user_infos.append(user_info)
+
+        return user_infos
 
     async def search_videos_by_users(self, count=10, users=[], videos=[]):
         """
@@ -95,11 +105,15 @@ class Scrapper:
             for user in users:
                 user_tag = api.user(user)
                 print(f"Searching for {user}")
-                info = await user_tag.info()
+
+                try:
+                    info = await user_tag.info()
+                except Exception:
+                    print(f"User {user} not found")
+                    continue
                 print(info)
                 async for video in user_tag.videos(count=count, cursor=0):
                     # print(video)
-
                     videos.append(video)
                     # print(video.as_dict)
 
@@ -197,7 +211,83 @@ class Scrapper:
         }
         return processed_video
 
-    def add_users_to_db(self, processed_videos, connection_str):
+    def add_users_to_db_from_list_of_user_info(self, users=[], connection_str=""):
+        """
+        Add users to the SQL database
+        Args:
+            users: list of user_info dictionaries
+            connection_str: connection string to the SQL database
+        """
+
+        # check if there are any users to process
+        if not users:
+            raise ValueError("No users to process")
+
+        # check if there is a connection string
+        if not connection_str:
+            raise ValueError("No connection string provided")
+
+        with pyodbc.connect(connection_str) as cnxn:
+            cursor = cnxn.cursor()
+
+            # remove None values from the list
+            users = [user for user in users if user]
+            print("Number of users to be added to database", len(users))
+
+            # Make sure only new users get added to the db
+            # Get all user ids from the user_info list
+            users_ids = {int(user["userInfo"]["user"]["id"]) for user in users}
+            print("Number of unique user ids to be added to database", len(users_ids))
+
+            # Get all unique user ids from the SQL database
+            cursor.execute("SELECT id FROM dbo.Users")
+            unique_user_ids_sql = {row[0] for row in cursor.fetchall()}
+            print("Number of unique user ids in database", len(unique_user_ids_sql))
+
+            # Determine which user ids need to be added
+            unique_user_ids_to_add = users_ids - unique_user_ids_sql
+            print("Number of unique user ids added to database", len(unique_user_ids_to_add))
+
+            # Filter users to add
+            users_to_add = [
+                user
+                for user in users
+                if int(user["userInfo"]["user"]["id"]) in unique_user_ids_to_add
+            ]
+
+            print("Number of new users to be added to database", len(users_to_add))
+
+            # Add users to SQL database
+            for user in users_to_add:
+                stats = user["userInfo"]["stats"]
+                user_id = user["userInfo"]["user"]["id"]
+                user_nickname = user["userInfo"]["user"]["nickname"]
+                user_name_unique = user["userInfo"]["user"]["uniqueId"]
+                verified = user["userInfo"]["user"]["verified"]
+
+                query = """
+                INSERT INTO dbo.Users
+                (id, unique_name_id, nickname, follower_count, following_count, heart_count, video_count, digg_count, verified)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """
+                # cast data to correct types
+                data = (
+                    int(user_id),
+                    str(user_name_unique),
+                    str(user_nickname),
+                    int(stats["followerCount"]),
+                    int(stats["followingCount"]),
+                    int(stats["heart"]),
+                    int(stats["videoCount"]),
+                    int(stats["diggCount"]),
+                    bool(verified),
+                )
+                cursor.execute(query, data)
+            cnxn.commit()
+
+            print("Users added to database successfully")
+
+    def add_users_to_db_from_list_of_videos(self, processed_videos, connection_str):
         """
         Add users to the SQL database
         Args:
