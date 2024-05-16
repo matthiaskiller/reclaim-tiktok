@@ -2,8 +2,9 @@ import os
 
 import pyodbc
 from dotenv import load_dotenv
-from main_transcriber import StatCollector, print_progress_bar
-from tiktok_video_details import (
+
+from .main_transcriber import StatCollector, print_progress_bar
+from .tiktok_video_details import (
     HTTPRequestError,
     RequestReturnedNoneError,
     TiktokVideoDetails,
@@ -39,7 +40,7 @@ class DBConnector:
             cursor = cnxn.cursor()
             query = (
                 f"SELECT * FROM {self.table} "
-                "WHERE transcript_en IS NULL AND transcript_de IS NULL"
+                "WHERE transcript_en IS NULL AND transcript_de IS NULL AND no_transcript_reason IS NULL"
             )
             cursor.execute(query)
             rows = cursor.fetchall()
@@ -121,7 +122,12 @@ class DBConnector:
                 index = 0
                 for row in rows:
                     completion_percentage = (index / total_rows) * 100
-                    print_progress_bar(completion_percentage)
+                    print_progress_bar(
+                        completion_percentage,
+                        successes=stats.successes,
+                        private=len(stats.private_videos),
+                        failed=len(stats.failed_requests),
+                    )
                     video_id = row[0]
                     url = row[12]
                     index += 1
@@ -129,12 +135,10 @@ class DBConnector:
                         tt_obj = TiktokVideoDetails(url=url)
                     except VideoIsPrivateError as error:
                         stats.add_private_video(url)
-                        print("\n", error)
                         update_with_failure(str(error), video_id)
                         continue
                     except (RequestReturnedNoneError, HTTPRequestError) as error:
                         stats.add_failed_request(url)
-                        print("\n", error)
                         update_with_failure(str(error), video_id)
                         continue
                     except Exception as error:
@@ -161,6 +165,7 @@ class DBConnector:
                     except Exception as error:
                         print("\n", error)
                         update_with_failure(str(error), video_id)
+                        # ? stats.add_failed_request(url)
 
             except KeyboardInterrupt:
                 print("\nKeyboard Interrupt detected. Stopping...")

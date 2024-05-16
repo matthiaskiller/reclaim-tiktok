@@ -72,13 +72,14 @@ class StatCollector:
         print("Total elapsed time: %dh %dm %.2fs" % (hours, minutes, seconds))
 
 
-def print_progress_bar(percentage: float, bar_length: int = 20) -> None:
+def print_progress_bar(percentage: float, bar_length: int = 20, **kwargs) -> None:
     """Prints a simple progress bar based on an updated percentage
 
     Params
     ---
     :param percentage: The percentage to be displayed
     :param bar_length: The desired length of the bar, defaulted to 20 ``'='``
+    :param kwargs: Additional key value pairs to be printed next to the bar
     """
     normalizer = int(100 / bar_length)
     progress = "\r[%s%s] %.2f%%" % (
@@ -86,6 +87,8 @@ def print_progress_bar(percentage: float, bar_length: int = 20) -> None:
         " " * int(bar_length - percentage / normalizer),
         percentage,
     )
+    for key, value in kwargs.items():
+        progress += f" {key}: {value}"
     print(progress, end="", flush=True)
 
 
