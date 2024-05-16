@@ -7,6 +7,11 @@ Run:
 
 ```conda env create -f environment.yml```
 
+### Install Repo
+Install our reklaim-tiktok package to ensure imports are working.
+
+`pip install -e .`
+
 ### Unofficial TikTok API
 To work with the [Unofficial TikTok API](https://github.com/davidteather/TikTok-Api):
 
