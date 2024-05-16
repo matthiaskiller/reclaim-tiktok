@@ -4,8 +4,8 @@ import os
 import pyodbc
 from dotenv import load_dotenv
 
-from .main_transcriber import StatCollector, print_progress_bar
-from .tiktok_video_details import (
+from reclaim_tiktok.transcriber.main_transcriber import StatCollector, print_progress_bar
+from reclaim_tiktok.transcriber.tiktok_video_details import (
     HTTPRequestError,
     RequestReturnedNoneError,
     TiktokVideoDetails,
