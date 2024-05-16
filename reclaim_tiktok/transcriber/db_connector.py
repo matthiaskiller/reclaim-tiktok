@@ -1,3 +1,4 @@
+import logging
 import os
 
 import pyodbc
@@ -12,6 +13,8 @@ from .tiktok_video_details import (
 )
 
 load_dotenv()
+
+LOG = logging.getLogger("reclaim_tiktok")
 
 
 class DBConnector:
@@ -44,6 +47,7 @@ class DBConnector:
             )
             cursor.execute(query)
             rows = cursor.fetchall()
+            LOG.debug("Fetched %d rows without transcription", len(rows))
             return rows
 
     def get_urls_with_transcription(self):
@@ -136,14 +140,20 @@ class DBConnector:
                     except VideoIsPrivateError as error:
                         stats.add_private_video(url)
                         update_with_failure(str(error), video_id)
+                        LOG.info("Video is private", extra={"video_id": video_id})
                         continue
                     except (RequestReturnedNoneError, HTTPRequestError) as error:
                         stats.add_failed_request(url)
                         update_with_failure(str(error), video_id)
+                        LOG.info("Video request returned None", extra={"video_id": video_id})
                         continue
                     except Exception as error:
                         stats.add_failed_request(url)
-                        print("\nUnexpected Exception occured:", error)
+                        LOG.exception(
+                            "\nUnexpected Exception occured: %s",
+                            error,
+                            extra={"video_id": video_id},
+                        )
                         update_with_failure(str(error), video_id)
                         continue
 
@@ -159,17 +169,31 @@ class DBConnector:
                                 video_id,
                             )
                             stats.add_success()
+                            LOG.debug(
+                                "Video transcripts added succesfully", extra={"video_id": video_id}
+                            )
                         else:
                             update_with_failure("No transcription provided by Tiktok", video_id)
+                            LOG.debug("Video has no transcription", extra={"video_id": video_id})
 
                     except Exception as error:
-                        print("\n", error)
+                        # print("\n", error)
+                        LOG.exception(
+                            "Unexpected error when getting transcripts: %s",
+                            error,
+                            extra={"video_id": video_id},
+                        )
                         update_with_failure(str(error), video_id)
                         # ? stats.add_failed_request(url)
 
             except KeyboardInterrupt:
                 print("\nKeyboard Interrupt detected. Stopping...")
             except Exception as error:
-                print("\nUnexpected Exception occurred when handling exception:", error)
+                # print("\nUnexpected Exception occurred when handling exception:", error)
+                LOG.exception(
+                    "\nUnexpected Exception occurred when handling exception: %s",
+                    error,
+                    extra={"video_id": video_id},
+                )
             finally:
                 stats.print_stats()

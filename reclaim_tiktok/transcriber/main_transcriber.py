@@ -89,6 +89,7 @@ def print_progress_bar(percentage: float, bar_length: int = 20, **kwargs) -> Non
     )
     for key, value in kwargs.items():
         progress += f" {key}: {value}"
+    progress += "\r"
     print(progress, end="", flush=True)
 
 

@@ -1,0 +1,48 @@
+{
+    "version": 1,
+    "disable_existing_loggers": false,
+    "formatters": {
+        "simple": {
+            "format": "%(asctime)s:%(levelname)s:%(name)s:%(message)s",
+            "datefmt": "%d-%m-%Y %H:%M:%S%z"
+        },
+        "json": {
+            "()": "reclaim_tiktok.logging_config.my_logging_handlers.MyJSONFormatter",
+            "fmt_keys": {
+                "level": "levelname",
+                "message": "message",
+                "timestamp": "timestamp",
+                "logger": "name",
+                "module": "module",
+                "function": "funcName",
+                "line": "lineno",
+                "thread_name": "threadName"
+            }
+        }
+    },
+    "handlers": {
+        "stderr": {
+            "class": "logging.StreamHandler",
+            "level": "WARNING",
+            "formatter": "simple",
+            "stream": "ext://sys.stderr"
+        },
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "INFO",
+            "formatter": "json",
+            "filename": "./logs/transcriber.log.jsonl",
+            "maxBytes": 1000000,
+            "backupCount": 3
+        }
+    },
+    "loggers": {
+        "root": {
+            "level": "DEBUG",
+            "handlers": [
+                "stderr",
+                "file"
+            ]
+        }
+    }
+}

@@ -8,7 +8,6 @@
 *~*
 tiktok_videos_based_on_hashtags_raw_fetch.csv
 **/.env
-logging_config/
 sandbox*
 urls.txt
 meta_OLD.csv
@@ -17,3 +16,4 @@ executions.log
 .env
 test*
 transcriptions.csv
+**/logs

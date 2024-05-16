@@ -1,4 +1,5 @@
 import io
+import logging
 import os
 import re
 
@@ -13,6 +14,8 @@ from requests.exceptions import ReadTimeout, SSLError
 from reclaim_tiktok.transcriber.azure_connector import AzureConnector
 
 pyk.specify_browser("chrome")
+
+LOG = logging.getLogger("reclaim_tiktok")
 
 
 class VideoIsPrivateError(Exception):
@@ -58,16 +61,29 @@ class TiktokVideoDetails:
                 tt_json = pyk.alt_get_tiktok_json(self.url)
             except (ReadTimeout, SSLError):
                 retries -= 1
+                LOG.debug(
+                    "HTTPRequestError encountered",
+                    extra={"video_url": url, "retries_left": retries},
+                )
                 if retries == 0:
                     raise HTTPRequestError("\nEncountered an error when making the http request.")
                 continue
-            except Exception:
+            except Exception as error:
                 retries -= 1
+                LOG.debug(
+                    "Exception encountered: %s",
+                    error,
+                    extra={"video_url": url, "retries_left": retries},
+                )
                 if retries == 0:
                     raise
                 continue
             if tt_json is None:
                 retries -= 1
+                LOG.debug(
+                    "RequestReturnedNoneError encountered",
+                    extra={"video_url": url, "retries_left": retries},
+                )
                 if retries == 0:
                     raise RequestReturnedNoneError(
                         "\nJson request returned None. Please try again later."
@@ -79,6 +95,10 @@ class TiktokVideoDetails:
                 ]["itemStruct"]
             except KeyError:
                 retries -= 1
+                LOG.debug(
+                    "VideoIsPrivateError encountered",
+                    extra={"video_url": url, "retries_left": retries},
+                )
                 if retries == 0:
                     raise VideoIsPrivateError(
                         "\nVideo details could not be parsed. "
@@ -160,8 +180,11 @@ class TiktokVideoDetails:
                             # Some captions require an extra space in between
                             transcript += f"{caption.text} "
                     except webvtt.MalformedFileError as error:
-                        print(error)
-                        print(vtt)
+                        LOG.exception(
+                            "Encountered MalfromedFileError in transcription: %s",
+                            error,
+                            {"video_url": self.url},
+                        )
                         continue
                     self.transcriptions[language] = transcript
 
