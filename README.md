@@ -1,5 +1,12 @@
 # Reclaim TikTok
 
+## Disclaimer
+This code is developed by our Team Reclaim TikTok for the AI for Impact Hackathon. The code, including any associated documentation, data etc., is the intellectual property of our Team.
+## Usage Restrictions
+This code shall not be used, copied, modified, or distributed without the explicit written consent of us. Any use of this code without permission is prohibited.
+
+
+
 ## Setup 
 
 ### Conda installation
