@@ -33,9 +33,9 @@ class DBConnector:
             "TrustServerCertificate=no;Connection Timeout=30;"
         )
 
-    def get_urls_without_transcription(self):
+    def get_videos_without_transcription(self):
         """
-        Get all the URLs that do not have a transcript in the database
+        Get all the videos that do not have a transcript in the database
         Returns:
             list of pyodbc.Row: The rows that do not have a transcript
         """
@@ -50,9 +50,9 @@ class DBConnector:
             LOG.debug("Fetched %d rows without transcription", len(rows))
             return rows
 
-    def get_urls_with_transcription(self):
+    def get_videos_with_transcription(self):
         """
-        Get all the URLs that have a transcript in the database
+        Get all the videos that have a transcript in the database
         Returns:
             list of pyodbc.Row: The rows that have a transcript
         """
@@ -61,6 +61,51 @@ class DBConnector:
             query = (
                 f"SELECT * FROM {self.table} "
                 "WHERE transcript_en IS NOT NULL OR transcript_de IS NOT NULL"
+            )
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            return rows
+
+    def get_videos_with_german_transcription(self):
+        """
+        Get all the videos that have a german transcript in the database
+        Returns:
+            list of pyodbc.Row: The rows that have a transcript
+        """
+        with pyodbc.connect(self.connection_str) as cnxn:
+            cursor = cnxn.cursor()
+            query = f"SELECT * FROM {self.table} " "WHERE transcript_de IS NOT NULL"
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            return rows
+
+    def get_videos_with_german_transcription_without_core_message(self):
+        """
+        Get all the videos that have a german transcript in the database but no core message
+        Returns:
+            list of pyodbc.Row: The rows that have a transcript
+        """
+        with pyodbc.connect(self.connection_str) as cnxn:
+            cursor = cnxn.cursor()
+            query = (
+                f"SELECT * FROM {self.table} "
+                "WHERE transcript_de IS NOT NULL AND core_messages_de IS NULL"
+            )
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            return rows
+
+    def get_videos_with_german_transcription_with_core_message(self):
+        """
+        Get all the videos that have a german transcript in the database and a core message
+        Returns:
+            list of pyodbc.Row: The rows that have a transcript
+        """
+        with pyodbc.connect(self.connection_str) as cnxn:
+            cursor = cnxn.cursor()
+            query = (
+                f"SELECT * FROM {self.table} "
+                "WHERE transcript_de IS NOT NULL AND core_messages_de IS NOT NULL"
             )
             cursor.execute(query)
             rows = cursor.fetchall()
@@ -197,3 +242,60 @@ class DBConnector:
                 )
             finally:
                 stats.print_stats()
+
+    def update_core_messages(
+        self,
+        video_id: int,
+        core_messages_de: str,
+    ):
+        """
+        Update the core_messages_de of a video in the database
+        Args:
+            video_id (int): The video ID
+            core_messages_de: core_messages_de to be added
+        """
+        with pyodbc.connect(self.connection_str) as cnxn:
+            cursor = cnxn.cursor()
+            query = f"""
+            UPDATE {self.table}
+            SET core_messages_de = ?
+            WHERE id = ?
+            """
+
+            cursor.execute(query, core_messages_de, video_id)
+
+    def update_cluster_description(
+        self,
+        cluster_id: int,
+        description: str,
+    ):
+        """
+        Update the decsription of a cluster in the database
+        Args:
+            cluster (int): The cluster ID
+            description: description to be added
+        """
+        with pyodbc.connect(self.connection_str) as cnxn:
+            cursor = cnxn.cursor()
+            query = """
+            UPDATE [dbo].[Clusters]
+            SET description = ?
+            WHERE id = ?
+            """
+
+            cursor.execute(query, description, cluster_id)
+            cursor.commit()
+            print(f"Updated cluster {cluster_id} with description {description}")
+
+    def get_existing_cluster_ids(self):
+        """
+        Get all the existing cluster ids in the database.
+        Returns:
+            list of pyodbc.Row: The rows that have a transcript
+        """
+        with pyodbc.connect(self.connection_str) as cnxn:
+            cursor = cnxn.cursor()
+            query = "SELECT id FROM [dbo].[Clusters] "
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            return rows
