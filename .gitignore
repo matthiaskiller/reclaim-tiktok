@@ -17,3 +17,4 @@ executions.log
 test*
 transcriptions.csv
 **/logs
+data/embeddings/
