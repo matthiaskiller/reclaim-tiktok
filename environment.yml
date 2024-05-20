@@ -29,3 +29,6 @@ dependencies:
       - beautifulsoup4
       - azure-identity
       - azure-storage-blob
+      - markdown
+      - flask
+      - flask-cors
