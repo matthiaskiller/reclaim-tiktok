@@ -1,7 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
 
 from chatbot import ChatBot
@@ -12,8 +12,8 @@ cors = CORS(app)
 
 
 @app.route("/")
-def home_page():
-    return "index.html"
+def index():
+    return render_template("index.html")
 
 
 @app.route("/get-chat-completion", methods=["POST"])
