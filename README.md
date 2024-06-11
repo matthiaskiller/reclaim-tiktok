@@ -1,5 +1,25 @@
 # Reclaim TikTok
 
+This project aims to provide real-time insights into trending narratives of right-wing content on TikTok. It also assess the dark-reach of right-wing content which is especially interesting as TikTok offers a highly individualized user experience.  
+
+## Motivation 
+Rising popularity right- wing parties and views Europe-wide.
+One of the reasons lies in successful usage of varying social media channels. 
+Democratic political parties and actors are left behind in the always-on campaigning.
+
+TikTok is especially problematic as young people get indoctrinated by extreme right narratives. EU paralement election results (age 16-24 years) offer a first glimpse into this issue.
+
+## Frontend
+Results are displayed in a dashboard and users can also interact with the data via a custom chatbot accessing our database. 
+
+![Frontend visualization](https://github.com/matthiaskiller/reclaim-tiktok/blob/main/assets/frontend_vis.png?raw=true)
+
+
+## Technical Architecture 
+
+![Technical Architecture](https://github.com/matthiaskiller/reclaim-tiktok/blob/main/assets/technical_architecture.png?raw=true)
+
+
 ## Disclaimer
 This code is developed by our Team Reclaim TikTok for the AI for Impact Hackathon. The code, including any associated documentation, data etc., is the intellectual property of our Team.
 ## Usage Restrictions
