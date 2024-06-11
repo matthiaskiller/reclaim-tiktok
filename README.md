@@ -2,6 +2,8 @@
 
 This project aims to provide real-time insights into trending narratives of right-wing content on TikTok. It also assess the dark-reach of right-wing content which is especially interesting as TikTok offers a highly individualized user experience.  
 
+The code was developed during a hackathon sprint and yet needs to be refactored to meet quality standards and best practices.
+
 ## Motivation 
 Rising popularity right- wing parties and views Europe-wide.
 One of the reasons lies in successful usage of varying social media channels. 
